@@ -6,11 +6,7 @@ import { Cloud, File, Loader2 } from "lucide-react";
 import { redirect, useRouter } from "next/navigation";
 import axios from "axios";
 
-const UploadDropZone = () => {
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-
-  // make sure there's file uploaded
+const UploadDropZone = ({ onFileDrop }) => {
   const [error, setError] = useState("");
 
   return (
@@ -18,7 +14,10 @@ const UploadDropZone = () => {
       onError={() => setError("Please upload a file")}
       accept={["image/jpeg", "application/word", "application/pdf"]}
       maxSize={2 * 1024 * 1024}
-      onDrop={(acceptedFiles) => console.log(acceptedFiles)}
+      onDrop={(acceptedFiles) => {
+        setError("");
+        onFileDrop(acceptedFiles[0]); // Pass the file to the parent
+      }}
       multiple={false}
     >
       {({ getRootProps, getInputProps, acceptedFiles }) => (
@@ -26,7 +25,7 @@ const UploadDropZone = () => {
           {...getRootProps()}
           className="border border-dashed rounded-lg h-44 border-zinc-300"
         >
-          <input type="file" {...getInputProps()} className="hidden" />
+          <input type="file" {...getInputProps()} className="hidden" id="cv" name="cv" />
 
           <div className="flex items-center justify-center w-full h-full">
             <label
@@ -36,29 +35,22 @@ const UploadDropZone = () => {
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
                 <Cloud className="w-10 h-10 mb-2 text-gray-500" />
                 <p className="mb-2 text-sm text-gray-700">
-                  <span className="font-semibold sec-color">
-                    Click to upload
-                  </span>{" "}
+                  <span className="font-semibold sec-color">Click to upload</span>{" "}
                   or drag and drop
                 </p>
                 <p className="text-xs text-gray-500">this is a required </p>
                 <p className="mt-2 text-xs text-gray-500">
-                  max file size is 8MB and must be Pdf{" "}
+                  max file size is 2MB and must be PDF
                 </p>
               </div>
               {acceptedFiles && acceptedFiles[0] ? (
-                <div className="flex items-center  rounded-md overflow-hidden outline-[1.5px] outline-zinc-200 divide-x divide-zinc-200 bg-white max-w-xs ">
+                <div className="flex items-center rounded-md overflow-hidden outline-[1.5px] outline-zinc-200 divide-x divide-zinc-200 bg-white max-w-xs">
                   <div className="grid h-full px-3 py-2 place-items-center">
                     <File className="w-4 h-4" />
                   </div>
                   <div className="h-full px-3 py-2 text-sm truncate">
                     {acceptedFiles[0].name}
                   </div>
-                </div>
-              ) : null}
-              {isUploading ? (
-                <div className="flex items-center justify-center w-full max-w-xs mx-auto ">
-                  <Loader2 className="w-6 h-6 animate-spin" />
                 </div>
               ) : null}
             </label>
@@ -78,6 +70,7 @@ const Form = () => {
 
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [file, setFile] = useState(null); // State to hold the uploaded file
   const router = useRouter();
 
   const handleRedirect = () => {
@@ -90,28 +83,27 @@ const Form = () => {
     try {
       setLoading(true);
 
+      const formData = new FormData();
+      formData.append("cv", file); // Append the file to the form data
+      Object.keys(data).forEach(key => formData.append(key, data[key]));
+
       const response = await axios.post(
         "https://piensofz.com/public/api/apply",
-        data
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } } // Important for file upload
       );
 
       // Handle successful response
       if (response.status === 200 || response.status === 201) {
         console.log("Message submitted successfully!");
-        // Reset form data, display success message, etc.
       } else {
         console.error("API request failed with status", response.status);
-        // Handle specific error cases based on response.status and response.data
       }
     } catch (error) {
       console.error("Error during API request:", error);
-      // Handle network errors or other issues
     } finally {
       setLoading(false);
-
       setSubmitted(true);
-      // refresh page
-
       setTimeout(() => {
         location.reload();
       }, 5000);
@@ -143,7 +135,6 @@ const Form = () => {
           id="phoneNumber"
           {...register("phoneNumber", {
             required: "Phone number is required",
-            // Specify custom error message for letters
             pattern: {
               value: /^\d+$/,
               message: "Only numbers allowed.",
@@ -190,8 +181,7 @@ const Form = () => {
           <p className="text-sm text-red-500">{errors.position.message}</p>
         )}
       </div>
-
-      <UploadDropZone />
+      <UploadDropZone onFileDrop={setFile} />
 
       <div className="flex flex-col items-center justify-center mb-4">
         <button
