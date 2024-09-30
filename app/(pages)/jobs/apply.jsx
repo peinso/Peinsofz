@@ -83,22 +83,30 @@ const Form = () => {
     try {
       setLoading(true);
 
-      const formData = new FormData();
-      formData.append("cv", file); // Append the file to the form data
-      Object.keys(data).forEach(key => formData.append(key, data[key]));
+      // Convert the file to Base64
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onloadend = async () => {
+        const base64data = reader.result.split(',')[1]; // Get the Base64 string without the data URL prefix
 
-      const response = await axios.post(
-        "https://piensofz.com/public/api/apply",
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } } // Important for file upload
-      );
+        const formData = {
+          ...data,
+          cv: base64data, // Add the Base64 string to the form data
+        };
 
-      // Handle successful response
-      if (response.status === 200 || response.status === 201) {
-        console.log("Message submitted successfully!");
-      } else {
-        console.error("API request failed with status", response.status);
-      }
+        const response = await axios.post(
+          "https://piensofz.com/public/api/apply",
+          formData,
+          { headers: { "Content-Type": "application/json" } } // Set the content type to JSON
+        );
+
+        // Handle successful response
+        if (response.status === 200 || response.status === 201) {
+          console.log("Message submitted successfully!");
+        } else {
+          console.error("API request failed with status", response.status);
+        }
+      };
     } catch (error) {
       console.error("Error during API request:", error);
     } finally {
