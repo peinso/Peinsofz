@@ -10,7 +10,7 @@ const iconsLinks = [
     ),
   },
   {
-    href: "https://www.linkedin.com/company/pienso-us",
+    href: "https://eg.linkedin.com/company/petrological-integrated-solutions---peinso",
     icon: (
       <Linkedin className="w-6 h-6 hover:scale-125 hover:text-[#ffb82b] " />
     ),
